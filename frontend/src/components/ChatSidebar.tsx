@@ -3,11 +3,13 @@ import { sendChat, type ChatMessage } from "@/lib/api";
 import type { BoardData } from "@/lib/kanban";
 
 type ChatSidebarProps = {
+  isOpen: boolean;
+  onClose: () => void;
   onBoardChange: (board: BoardData) => void;
 };
 
-export const ChatSidebar = ({ onBoardChange }: ChatSidebarProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+// Stays mounted while closed so the conversation is kept.
+export const ChatSidebar = ({ isOpen, onClose, onBoardChange }: ChatSidebarProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -37,15 +39,7 @@ export const ChatSidebar = ({ onBoardChange }: ChatSidebarProps) => {
   };
 
   if (!isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-20 rounded-full bg-[var(--navy-dark)] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-white shadow-[var(--shadow)] transition hover:brightness-125"
-      >
-        AI Assistant
-      </button>
-    );
+    return null;
   }
 
   return (
@@ -65,7 +59,7 @@ export const ChatSidebar = ({ onBoardChange }: ChatSidebarProps) => {
         </div>
         <button
           type="button"
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
           className="rounded-full border border-[var(--stroke)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
         >
           Close

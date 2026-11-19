@@ -61,10 +61,15 @@ describe("ChatSidebar", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not respond/i);
   });
 
-  it("can be closed", async () => {
-    mockApi();
+  it("closes and reopens with the conversation kept", async () => {
+    mockApi({ chatReply: { message: "Hi there", board: null } });
     await openChat();
+    await send("Hello");
+    await screen.findByTestId("chat-assistant");
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByLabelText("Chat message")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "AI Assistant" }));
+    expect(screen.getByTestId("chat-assistant")).toHaveTextContent("Hi there");
   });
 });

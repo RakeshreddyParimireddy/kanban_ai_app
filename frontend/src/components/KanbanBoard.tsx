@@ -24,6 +24,7 @@ type KanbanBoardProps = {
 export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
   const [board, setBoard] = useState<BoardData | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -143,6 +144,14 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
               </div>
               <button
                 type="button"
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                aria-pressed={isChatOpen}
+                className="rounded-full bg-[var(--primary-blue)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110"
+              >
+                AI Assistant
+              </button>
+              <button
+                type="button"
                 onClick={onLogout}
                 className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
               >
@@ -192,7 +201,11 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
         </DndContext>
       </main>
       {/* The backend already saved the AI's board, so only update local state. */}
-      <ChatSidebar onBoardChange={setBoard} />
+      <ChatSidebar
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onBoardChange={setBoard}
+      />
     </div>
   );
 };

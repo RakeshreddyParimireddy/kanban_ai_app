@@ -16,7 +16,7 @@ Next.js 16 (App Router) + React 19 + Tailwind CSS 4 Kanban board. Built as a sta
 - `src/components/KanbanCard.tsx` - sortable card with Edit (inline title/details form) and Remove buttons. Drag attributes are removed while editing.
 - `src/components/KanbanCardPreview.tsx` - card rendered in the drag overlay.
 - `src/components/NewCardForm.tsx` - toggleable title/details form.
-- `src/components/ChatSidebar.tsx` - collapsible AI chat panel (sticky column beside the board). Keeps history in state and sends it to `/api/chat`; when the reply has a board it calls `onBoardChange` (the backend has already saved it).
+- `src/components/ChatSidebar.tsx` - AI chat panel (sticky column beside the board), toggled by the header "AI Assistant" button and kept mounted while closed. Keeps history in state and sends it to `/api/chat`; when the reply has a board it calls `onBoardChange` (the backend has already saved it).
 
 ## Data shape
 
