@@ -1,0 +1,28 @@
+{
+  "database": "SQLite",
+  "file": "backend/data/app.db (/app/data/app.db in the container)",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY",
+        "username": "TEXT NOT NULL UNIQUE"
+      }
+    },
+    "boards": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY",
+        "user_id": "INTEGER NOT NULL UNIQUE REFERENCES users(id)",
+        "data": "TEXT NOT NULL (JSON, BoardData)",
+        "updated_at": "TEXT NOT NULL (ISO 8601 UTC)"
+      }
+    }
+  },
+  "board_data": {
+    "columns": [
+      { "id": "col-backlog", "title": "Backlog", "cardIds": ["card-1"] }
+    ],
+    "cards": {
+      "card-1": { "id": "card-1", "title": "Example card", "details": "Example details" }
+    }
+  }
+}
