@@ -95,3 +95,28 @@ def test_boards_isolated_per_user(db_path):
     db.save_board("other", board)
     assert db.get_board("Rakeshreddy").columns[0].title == "Backlog"
     assert db.get_board("other").columns[0].title == "Other's backlog"
+
+
+def test_put_rejects_removed_column(auth_client):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    removed = board["columns"].pop()
+    for card_id in removed["cardIds"]:
+        del board["cards"][card_id]
+    assert auth_client.put("/api/board", json=board).status_code == 422
+    assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
+
+
+def test_put_rejects_added_or_renamed_column_ids(auth_client):
+    extra = copy.deepcopy(db.DEFAULT_BOARD)
+    extra["columns"].append({"id": "col-extra", "title": "Extra", "cardIds": []})
+    assert auth_client.put("/api/board", json=extra).status_code == 422
+
+    renamed = copy.deepcopy(db.DEFAULT_BOARD)
+    renamed["columns"][0]["id"] = "col-other"
+    assert auth_client.put("/api/board", json=renamed).status_code == 422
+
+
+def test_put_rejects_reordered_columns(auth_client):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    board["columns"].reverse()
+    assert auth_client.put("/api/board", json=board).status_code == 422

@@ -5,7 +5,7 @@ import { initialData } from "@/test/boardFixture";
 import { mockApi } from "@/test/mockApi";
 
 const renderBoard = async () => {
-  render(<KanbanBoard onLogout={() => {}} />);
+  render(<KanbanBoard onLogout={() => {}} onSessionExpired={() => {}} />);
   await screen.findAllByTestId(/column-/i);
 };
 
@@ -24,7 +24,7 @@ describe("KanbanBoard", () => {
         cards: { c1: { id: "c1", title: "API card", details: "d" } },
       },
     });
-    render(<KanbanBoard onLogout={() => {}} />);
+    render(<KanbanBoard onLogout={() => {}} onSessionExpired={() => {}} />);
     expect(screen.getByText(/loading board/i)).toBeInTheDocument();
     expect(await screen.findByText("API card")).toBeInTheDocument();
     expect(screen.getByLabelText("Column title")).toHaveValue("From API");
@@ -106,5 +106,33 @@ describe("KanbanBoard", () => {
     expect(within(card).getByText("Align roadmap themes")).toBeInTheDocument();
     expect(within(card).queryByText("Discarded")).not.toBeInTheDocument();
     expect(savedBoards()).toHaveLength(0);
+  });
+
+  it("shows an error when the board can't be loaded", async () => {
+    mockApi({ boardStatus: 500 });
+    render(<KanbanBoard onLogout={() => {}} onSessionExpired={() => {}} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not be loaded/i);
+  });
+
+  it("shows an error when a save fails", async () => {
+    mockApi({ saveStatus: 500 });
+    await renderBoard();
+    await userEvent.type(within(getFirstColumn()).getByLabelText("Column title"), "X");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not be saved/i);
+  });
+
+  it("reports an expired session when loading or saving gets a 401", async () => {
+    mockApi({ boardStatus: 401 });
+    const onLoadExpired = vi.fn();
+    const { unmount } = render(<KanbanBoard onLogout={() => {}} onSessionExpired={onLoadExpired} />);
+    await waitFor(() => expect(onLoadExpired).toHaveBeenCalled());
+    unmount();
+
+    mockApi({ saveStatus: 401 });
+    const onSaveExpired = vi.fn();
+    render(<KanbanBoard onLogout={() => {}} onSessionExpired={onSaveExpired} />);
+    await screen.findAllByTestId(/column-/i);
+    await userEvent.type(within(getFirstColumn()).getByLabelText("Column title"), "X");
+    await waitFor(() => expect(onSaveExpired).toHaveBeenCalled());
   });
 });

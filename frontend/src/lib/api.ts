@@ -1,5 +1,18 @@
 import type { BoardData } from "@/lib/kanban";
 
+export class ApiError extends Error {
+  constructor(readonly status: number) {
+    super(`Request failed with status ${status}`);
+  }
+}
+
+const check = (response: Response) => {
+  if (!response.ok) {
+    throw new ApiError(response.status);
+  }
+  return response;
+};
+
 const post = (url: string, body?: unknown) =>
   fetch(url, {
     method: "POST",
@@ -7,12 +20,14 @@ const post = (url: string, body?: unknown) =>
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
+// Resolves to null when not signed in or the server can't be reached, so the login form shows.
 export const getMe = async (): Promise<string | null> => {
-  const response = await fetch("/api/me");
-  if (!response.ok) {
+  try {
+    const response = await fetch("/api/me");
+    return response.ok ? (await response.json()).username : null;
+  } catch {
     return null;
   }
-  return (await response.json()).username;
 };
 
 export const login = async (username: string, password: string): Promise<boolean> => {
@@ -25,7 +40,7 @@ export const logout = async () => {
 };
 
 export const getBoard = async (): Promise<BoardData> => {
-  const response = await fetch("/api/board");
+  const response = check(await fetch("/api/board"));
   return response.json();
 };
 
@@ -33,13 +48,15 @@ export const getBoard = async (): Promise<BoardData> => {
 let pendingSave: Promise<unknown> = Promise.resolve();
 
 export const saveBoard = (board: BoardData) => {
-  const request = pendingSave.then(() =>
-    fetch("/api/board", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(board),
-    })
-  );
+  const request = pendingSave
+    .then(() =>
+      fetch("/api/board", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(board),
+      })
+    )
+    .then(check);
   pendingSave = request.catch(() => undefined);
   return request;
 };
@@ -48,6 +65,8 @@ export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type ChatReply = { message: string; board: BoardData | null };
 
 export const sendChat = async (message: string, history: ChatMessage[]): Promise<ChatReply> => {
+  // Let queued saves land first so the AI works from the latest board.
+  await pendingSave;
   const response = await post("/api/chat", { message, history });
   if (!response.ok) {
     throw new Error("The assistant could not respond. Please try again.");

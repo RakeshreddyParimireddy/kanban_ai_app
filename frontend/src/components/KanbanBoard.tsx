@@ -11,20 +11,26 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import clsx from "clsx";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { createId, moveCard, type BoardData } from "@/lib/kanban";
-import { getBoard, saveBoard } from "@/lib/api";
+import { ApiError, getBoard, saveBoard } from "@/lib/api";
 
 type KanbanBoardProps = {
   onLogout: () => void;
+  onSessionExpired: () => void;
 };
 
-export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
+const isUnauthorized = (err: unknown) => err instanceof ApiError && err.status === 401;
+
+export const KanbanBoard = ({ onLogout, onSessionExpired }: KanbanBoardProps) => {
   const [board, setBoard] = useState<BoardData | null>(null);
+  const [error, setError] = useState("");
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatSending, setIsChatSending] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -33,20 +39,39 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
   );
 
   useEffect(() => {
-    getBoard().then(setBoard);
-  }, []);
+    getBoard().then(setBoard, (err) => {
+      if (isUnauthorized(err)) {
+        onSessionExpired();
+      } else {
+        setError("The board could not be loaded. Please reload the page.");
+      }
+    });
+  }, [onSessionExpired]);
 
   if (!board) {
     return (
       <main className="flex min-h-screen items-center justify-center text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
-        Loading board...
+        {error ? <p role="alert">{error}</p> : "Loading board..."}
       </main>
     );
   }
 
   const update = (next: BoardData) => {
+    // The AI replaces the whole board when it replies, so edits made meanwhile would be lost.
+    if (isChatSending) {
+      return;
+    }
     setBoard(next);
-    saveBoard(next);
+    saveBoard(next).then(
+      () => setError(""),
+      (err) => {
+        if (isUnauthorized(err)) {
+          onSessionExpired();
+        } else {
+          setError("Your latest changes could not be saved. Please reload the page.");
+        }
+      }
+    );
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -172,13 +197,28 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
           </div>
         </header>
 
+        {error && (
+          <p role="alert" className="text-sm font-medium text-red-600">
+            {error}
+          </p>
+        )}
+        {isChatSending && (
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
+            The AI assistant is updating the board. Editing resumes when it replies.
+          </p>
+        )}
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <section className="grid gap-6 lg:grid-cols-5">
+          <section
+            inert={isChatSending}
+            aria-busy={isChatSending}
+            className={clsx("grid gap-6 lg:grid-cols-5 transition", isChatSending && "opacity-60")}
+          >
             {board.columns.map((column) => (
               <KanbanColumn
                 key={column.id}
@@ -203,6 +243,8 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps) => {
       {/* The backend already saved the AI's board, so only update local state. */}
       <ChatSidebar
         isOpen={isChatOpen}
+        isSending={isChatSending}
+        onSendingChange={setIsChatSending}
         onClose={() => setIsChatOpen(false)}
         onBoardChange={setBoard}
       />

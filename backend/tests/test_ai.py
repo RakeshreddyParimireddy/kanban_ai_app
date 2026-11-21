@@ -3,7 +3,9 @@ import json
 import os
 from types import SimpleNamespace
 
+import httpx
 import pytest
+from openai import APIConnectionError
 
 from app import ai, db
 
@@ -18,6 +20,8 @@ def fake_ai(monkeypatch):
 
     def create(**kwargs):
         calls.append(kwargs)
+        if isinstance(replies[0], Exception):
+            raise replies.pop(0)
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=replies.pop(0)))])
 
     fake_client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
@@ -69,6 +73,43 @@ def test_prompt_includes_board_history_and_message(auth_client, fake_ai):
     assert system["role"] == "system"
     assert "Align roadmap themes" in system["content"]
     assert rest == [*history, {"role": "user", "content": "now"}]
+
+
+def test_ai_service_error_returns_502(auth_client, fake_ai):
+    fake_ai.replies.append(APIConnectionError(request=httpx.Request("POST", "https://openrouter.ai")))
+    assert auth_client.post("/api/chat", json={"message": "hi"}).status_code == 502
+    assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
+
+
+def test_ai_removing_a_column_is_rejected(auth_client, fake_ai):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    removed = board["columns"].pop()
+    for card_id in removed["cardIds"]:
+        del board["cards"][card_id]
+    fake_ai.replies.append(json.dumps({"message": "Removed Done", "board": board}))
+
+    assert auth_client.post("/api/chat", json={"message": "remove Done"}).status_code == 502
+    assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
+
+
+def test_missing_api_key_returns_502(auth_client, monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    ai.client.cache_clear()
+    try:
+        assert auth_client.post("/api/chat", json={"message": "hi"}).status_code == 502
+    finally:
+        ai.client.cache_clear()
+
+
+def test_client_has_timeout_and_limited_retries(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    ai.client.cache_clear()
+    try:
+        assert ai.client().timeout == 60
+        assert ai.client().max_retries == 1
+    finally:
+        ai.client.cache_clear()
 
 
 @live

@@ -1,11 +1,11 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { initialData } from "@/test/boardFixture";
 import { mockApi } from "@/test/mockApi";
 
 const openChat = async () => {
-  render(<KanbanBoard onLogout={() => {}} />);
+  render(<KanbanBoard onLogout={() => {}} onSessionExpired={() => {}} />);
   await screen.findAllByTestId(/column-/i);
   await userEvent.click(screen.getByRole("button", { name: "AI Assistant" }));
 };
@@ -71,5 +71,37 @@ describe("ChatSidebar", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "AI Assistant" }));
     expect(screen.getByTestId("chat-assistant")).toHaveTextContent("Hi there");
+  });
+
+  it("blocks board edits while the AI is replying", async () => {
+    let release = () => {};
+    const chatGate = new Promise<void>((resolve) => (release = resolve));
+    const { savedBoards } = mockApi({ chatReply: { message: "Done", board: null }, chatGate });
+    await openChat();
+    await send("Hello");
+
+    expect(screen.getByText(/the ai assistant is updating the board/i)).toBeInTheDocument();
+    const input = within(screen.getByTestId("column-col-backlog")).getByLabelText("Column title");
+    await userEvent.type(input, "X");
+    expect(input).toHaveValue("Backlog");
+    expect(savedBoards()).toHaveLength(0);
+
+    release();
+    await screen.findByTestId("chat-assistant");
+    await userEvent.type(input, "X");
+    expect(input).toHaveValue("BacklogX");
+    await waitFor(() => expect(savedBoards()).toHaveLength(1));
+  });
+
+  it("waits for queued saves before sending a chat message", async () => {
+    const { fetchMock } = mockApi({ chatReply: { message: "Done", board: null } });
+    await openChat();
+    await userEvent.type(within(screen.getByTestId("column-col-backlog")).getByLabelText("Column title"), "X");
+    await send("Hello");
+    await screen.findByTestId("chat-assistant");
+
+    const urls = fetchMock.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${url}`);
+    expect(urls.indexOf("PUT /api/board")).toBeGreaterThan(-1);
+    expect(urls.lastIndexOf("PUT /api/board")).toBeLessThan(urls.indexOf("POST /api/chat"));
   });
 });

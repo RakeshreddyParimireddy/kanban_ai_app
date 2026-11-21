@@ -26,3 +26,10 @@ def test_logout_clears_session(client):
     login(client)
     assert client.post("/api/logout").status_code == 200
     assert client.get("/api/me").status_code == 401
+
+
+def test_session_secret_is_not_a_fixed_default():
+    from app import main
+
+    assert main.SESSION_SECRET != "dev-secret"
+    assert len(main.SESSION_SECRET) >= 32

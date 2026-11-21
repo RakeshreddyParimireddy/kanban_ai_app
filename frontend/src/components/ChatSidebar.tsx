@@ -4,15 +4,23 @@ import type { BoardData } from "@/lib/kanban";
 
 type ChatSidebarProps = {
   isOpen: boolean;
+  isSending: boolean;
+  onSendingChange: (isSending: boolean) => void;
   onClose: () => void;
   onBoardChange: (board: BoardData) => void;
 };
 
 // Stays mounted while closed so the conversation is kept.
-export const ChatSidebar = ({ isOpen, onClose, onBoardChange }: ChatSidebarProps) => {
+// isSending lives in the board so it can block edits while the AI works on the board.
+export const ChatSidebar = ({
+  isOpen,
+  isSending,
+  onSendingChange,
+  onClose,
+  onBoardChange,
+}: ChatSidebarProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -24,7 +32,7 @@ export const ChatSidebar = ({ isOpen, onClose, onBoardChange }: ChatSidebarProps
     setInput("");
     setError("");
     setMessages([...messages, { role: "user", content: message }]);
-    setIsSending(true);
+    onSendingChange(true);
     try {
       const reply = await sendChat(message, messages);
       setMessages((prev) => [...prev, { role: "assistant", content: reply.message }]);
@@ -34,7 +42,7 @@ export const ChatSidebar = ({ isOpen, onClose, onBoardChange }: ChatSidebarProps
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setIsSending(false);
+      onSendingChange(false);
     }
   };
 

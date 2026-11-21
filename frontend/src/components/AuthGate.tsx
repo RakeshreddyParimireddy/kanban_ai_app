@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { LoginForm } from "@/components/LoginForm";
 import { getMe, logout } from "@/lib/api";
@@ -13,9 +13,11 @@ export const AuthGate = () => {
     getMe().then(setUsername);
   }, []);
 
+  const showLogin = useCallback(() => setUsername(null), []);
+
   const handleLogout = async () => {
     await logout();
-    setUsername(null);
+    showLogin();
   };
 
   if (username === undefined) {
@@ -24,5 +26,5 @@ export const AuthGate = () => {
   if (username === null) {
     return <LoginForm onSuccess={setUsername} />;
   }
-  return <KanbanBoard onLogout={handleLogout} />;
+  return <KanbanBoard onLogout={handleLogout} onSessionExpired={showLogin} />;
 };

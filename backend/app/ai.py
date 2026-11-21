@@ -26,7 +26,13 @@ Current board:
 
 @cache
 def client() -> OpenAI:
-    return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ["OPENROUTER_API_KEY"])
+    # A missing key raises openai.OpenAIError on first use, which the chat route turns into a 502.
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.environ.get("OPENROUTER_API_KEY"),
+        timeout=60,
+        max_retries=1,
+    )
 
 
 def chat(board: BoardData, history: list[ChatMessage], message: str) -> ChatReply:

@@ -11,7 +11,7 @@ Checklists are checked off by the agent as work completes. Each part ends with i
 - Board storage: one row per user holding the board as JSON (same `BoardData` shape the frontend already uses). Confirmed with the user in Part 5.
 - AI: `openai` Python SDK pointed at `https://openrouter.ai/api/v1`, model `openai/gpt-oss-120b`, key from `.env` (`OPENROUTER_API_KEY`). Structured Outputs return `{ message, board | null }`; a non-null `board` replaces the stored board.
 - SQLite file at `backend/data/app.db` (volume-mounted so data survives container restarts), created with schema and seed board on startup if missing.
-- Tests: `pytest` for backend, Vitest for frontend units, Playwright for e2e against the running container.
+- Tests: `pytest` for backend, Vitest for frontend units, Playwright for e2e. Since the code review (`docs/code_review.md`), Playwright starts its own backend on port 8001 with a throwaway database instead of using the running container, so test runs cannot overwrite real data.
 
 ## Part 1: Plan
 

@@ -32,13 +32,15 @@ Requires Docker Desktop.
 
    Get a key at https://openrouter.ai/keys. `.env` is git-ignored, so never commit it.
 
+   Optionally add `SESSION_SECRET=<long random string>` to keep sign-ins across restarts. Without it a random secret is generated at startup, so you sign in again after each restart.
+
 2. Start the app (Windows PowerShell):
 
    ```powershell
    .\scripts\start.ps1
    ```
 
-   Open http://localhost:8000 and sign in with `Rakeshreddy` / `Rakeshreddy123`.
+   Open http://localhost:8000 (only reachable from this machine) and sign in with `Rakeshreddy` / `Rakeshreddy123`.
 
 3. Stop the app:
 
@@ -50,7 +52,7 @@ On Mac/Linux use `scripts/start.sh` and `scripts/stop.sh`.
 
 ## Playwright tests
 
-The end-to-end tests run against the running container, so start the app first.
+The end-to-end tests start their own backend on port 8001 with a throwaway database, so they never touch your board. They need `uv` installed (as for the backend tests); the container does not need to be running.
 
 ```powershell
 cd frontend

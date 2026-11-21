@@ -20,7 +20,7 @@ Backend (in `backend/`, uv-managed, Python 3.13):
 Frontend (in `frontend/`):
 
 - Unit tests (Vitest): `npm run test:unit`; single file: `npx vitest run src/components/KanbanBoard.test.tsx`; by name: `npx vitest run -t "name"`
-- E2E (Playwright): `npm run test:e2e` - requires the app already running at `http://127.0.0.1:8000` (no dev server is started). Single spec: `npx playwright test tests/kanban.spec.ts`
+- E2E (Playwright): `npm run test:e2e` - builds the frontend, then Playwright starts its own backend (`uv run uvicorn`) on `127.0.0.1:8001` with a throwaway DB in the OS temp dir, so the real `backend/data` board is never touched. Single spec (after `npm run build`): `npx playwright test tests/kanban.spec.ts`
 - Lint: `npm run lint`
 - Build static export: `npm run build` (outputs `frontend/out`)
 
@@ -30,15 +30,15 @@ Live AI tests (pytest and `tests/chat.spec.ts`) are skipped unless `OPENROUTER_A
 
 Single container, single port. FastAPI (`backend/app/main.py`) serves `/api/*` and mounts the Next.js static export at `/` via `StaticFiles(html=True)`. The mount must stay last so API routes take precedence. The multi-stage `Dockerfile` builds the frontend in a node stage and copies `out/` to `/app/static`; `STATIC_DIR` overrides that path.
 
-- Auth: hardcoded credentials in `main.py`, session in a signed cookie (`SessionMiddleware`, `SESSION_SECRET` env with a dev default). The `current_user` dependency guards board and chat routes (401 otherwise).
+- Auth: hardcoded credentials in `main.py`, session in a signed cookie (`SessionMiddleware`, `SESSION_SECRET` env; if unset a random secret is generated per process, so sessions end on restart). The `current_user` dependency guards board and chat routes (401 otherwise). The start scripts publish the port on `127.0.0.1` only.
 - Storage (`backend/app/db.py`): stdlib `sqlite3`, `DB_PATH` env (default `backend/data/app.db`). Tables and the seeded user + default board are created on startup (lifespan). Each user has one row in `boards` holding the whole board as JSON.
-- Board shape: `BoardData = { columns: [{id, title, cardIds}], cards: {id: {id, title, details}} }`. Defined in Pydantic in `backend/app/models.py` and in TS in `frontend/src/lib/kanban.ts`; keep them in sync. Columns are fixed (5), only titles change; card order is `cardIds` order.
-- Saves are whole-board: the frontend `PUT`s the full board to `/api/board` after every change; `src/lib/api.ts` queues saves so they arrive in order.
-- AI (`backend/app/ai.py`): OpenAI SDK pointed at OpenRouter. `POST /api/chat` sends system prompt + current board JSON + client-held history + message, requesting a JSON schema response `{ message, board | null }` (non-strict, because the `cards` map can't be expressed in strict mode). The reply is validated with Pydantic; invalid replies return 502 without saving. A non-null `board` replaces the stored board and is returned so `ChatSidebar` updates the UI.
+- Board shape: `BoardData = { columns: [{id, title, cardIds}], cards: {id: {id, title, details}} }`. Defined in Pydantic in `backend/app/models.py` and in TS in `frontend/src/lib/kanban.ts`; keep them in sync. Columns are fixed (5), only titles change: `PUT /api/board` returns 422 and `/api/chat` returns 502 if column ids differ from the stored board. Card order is `cardIds` order.
+- Saves are whole-board: the frontend `PUT`s the full board to `/api/board` after every change; `src/lib/api.ts` queues saves so they arrive in order, and `sendChat` waits for that queue. A failed save shows an alert; a 401 on load or save returns to the login form. Board edits are blocked (`inert` + guard in `update`) while a chat request is in flight, because the AI reply replaces the whole board.
+- AI (`backend/app/ai.py`): OpenAI SDK pointed at OpenRouter. `POST /api/chat` sends system prompt + current board JSON + client-held history + message, requesting a JSON schema response `{ message, board | null }` (non-strict, because the `cards` map can't be expressed in strict mode). The reply is validated with Pydantic; invalid replies and OpenRouter errors (`OpenAIError`, including a missing key) return 502 without saving. The client uses a 60 s timeout and 1 retry. A non-null `board` replaces the stored board and is returned so `ChatSidebar` updates the UI.
 - Model: AGENTS.md specifies `openai/gpt-oss-120b`, but `MODEL` in `ai.py` currently uses a free model because the account returns OpenRouter 402. Switch back once credits exist.
 
 ## Testing notes
 
 - `backend/tests/conftest.py` sets `STATIC_DIR` to a temp dir before importing the app and monkeypatches `db.DB_PATH` per test; use the `client` / `auth_client` fixtures.
 - Frontend unit tests stub `fetch` via `src/test/mockApi.ts`.
-- Playwright runs with 1 worker because all tests share one user's persisted board; `signInToBoard` in `tests/helpers.ts` resets it to the fixture.
+- Playwright runs with 1 worker because all tests share one user's persisted board (in the throwaway e2e DB); `signInToBoard` in `tests/helpers.ts` resets it to the fixture.

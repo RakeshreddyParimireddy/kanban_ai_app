@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthGate } from "@/components/AuthGate";
 import { mockApi } from "@/test/mockApi";
@@ -49,5 +49,13 @@ describe("AuthGate", () => {
     await userEvent.click(screen.getByRole("button", { name: /log out/i }));
     expect(await screen.findByRole("button", { name: /sign in/i })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/logout", expect.anything());
+  });
+
+  it("returns to the login form when a save finds the session expired", async () => {
+    mockApi({ saveStatus: 401 });
+    render(<AuthGate />);
+    const [column] = await screen.findAllByTestId(/column-/i);
+    await userEvent.type(within(column).getByLabelText("Column title"), "X");
+    expect(await screen.findByRole("button", { name: /sign in/i })).toBeInTheDocument();
   });
 });
