@@ -28,6 +28,7 @@ describe("KanbanBoard", () => {
     expect(screen.getByText(/loading board/i)).toBeInTheDocument();
     expect(await screen.findByText("API card")).toBeInTheDocument();
     expect(screen.getByLabelText("Column title")).toHaveValue("From API");
+    expect(screen.getByText("1 card")).toBeInTheDocument();
   });
 
   it("renders five columns", async () => {
