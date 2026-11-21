@@ -33,7 +33,7 @@ Success: user approves this document.
 Tests:
 - [x] `pytest`: `/api/health` returns 200 and `{"status": "ok"}`; `/` returns the hello world HTML
 
-Note: Parts 2-3 verified by running the backend locally with uv (`STATIC_DIR=../frontend/out`); container run pending Docker/WSL setup.
+Note: verified in Docker on 2026-11-21: `scripts/start.ps1` builds and runs the container, health/login/board work, the Playwright suite passes against it, and `scripts/stop.ps1` removes it.
 
 Success: `scripts/start` brings the container up, `http://localhost:8000/` shows hello world, `http://localhost:8000/api/health` returns ok, `scripts/stop` tears it down.
 
@@ -99,7 +99,7 @@ Tests:
 - [x] Vitest with mocked `fetch`: board renders from API data; each change calls `saveBoard` with the expected board
 - [x] Playwright: make each kind of change, reload the page, change is still there; restart container, change is still there
 
-Restart persistence verified by restarting the local server on the same DB file (container restart pending Docker).
+Restart persistence verified with `docker restart pm-app` (board data on the mounted volume survives).
 
 Success: the Kanban is fully persistent per user.
 
@@ -112,7 +112,7 @@ Tests:
 - [x] `pytest` unit test with the client mocked
 - [x] `pytest` live test (skipped if `OPENROUTER_API_KEY` is not set) asserting the reply contains `4`
 
-Model note: `openai/gpt-oss-120b` returns OpenRouter 402 (account has no credits), so `nvidia/nemotron-3.5-super-vl:free` is used until credits are purchased. Live tests run locally with uv (container pending Docker).
+Model note: `openai/gpt-oss-120b` returns OpenRouter 402 (account has no credits), so `nvidia/nemotron-3.5-super-vl:free` is used until credits are purchased. Live call from inside the container verified. As of 2026-11-21 `openai/gpt-oss-120b` still returns 402; switch `MODEL` in `backend/app/ai.py` once credits are added.
 
 Success: live call from inside the container returns a correct answer.
 
