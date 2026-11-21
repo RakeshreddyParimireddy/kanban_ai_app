@@ -35,7 +35,7 @@ class Credentials(BaseModel):
 
 def current_user(request: Request) -> str:
     username = request.session.get("username")
-    if not username:
+    if username != USERNAME:
         raise HTTPException(status_code=401, detail="Not signed in")
     return username
 
