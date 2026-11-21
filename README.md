@@ -6,7 +6,7 @@ A Kanban project board with an AI assistant that can create, edit and move cards
 
 ## Features
 
-- Sign in (MVP uses a fixed demo account: `user` / `password`)
+- Sign in (MVP uses a fixed demo account: `Rakeshreddy` / `Rakeshreddy123`)
 - Kanban board with renamable columns
 - Add, edit, delete and drag-and-drop cards
 - AI chat sidebar that reads the board and can change one or more cards in a single request
@@ -38,7 +38,7 @@ Requires Docker Desktop.
    .\scripts\start.ps1
    ```
 
-   Open http://localhost:8000 and sign in with `user` / `password`.
+   Open http://localhost:8000 and sign in with `Rakeshreddy` / `Rakeshreddy123`.
 
 3. Stop the app:
 

@@ -51,7 +51,7 @@ def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with closing(connect()) as conn, conn:
         conn.executescript(SCHEMA)
-    create_user("user")
+    create_user("Rakeshreddy")
 
 
 def create_user(username: str) -> None:

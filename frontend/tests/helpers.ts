@@ -1,16 +1,16 @@
 import { expect, type Page } from "@playwright/test";
 import { initialData } from "../src/test/boardFixture";
 
-export const signIn = async (page: Page, password = "password") => {
+export const signIn = async (page: Page, password = "Rakeshreddy123") => {
   await page.goto("/");
-  await page.getByLabel("Username").fill("user");
+  await page.getByLabel("Username").fill("Rakeshreddy");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 };
 
 // Signs in via the API, resets the board to the seed data, and opens it.
 export const signInToBoard = async (page: Page) => {
-  await page.request.post("/api/login", { data: { username: "user", password: "password" } });
+  await page.request.post("/api/login", { data: { username: "Rakeshreddy", password: "Rakeshreddy123" } });
   await page.request.put("/api/board", { data: initialData });
   await page.goto("/");
   await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);

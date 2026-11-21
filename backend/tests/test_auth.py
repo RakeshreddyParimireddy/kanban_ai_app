@@ -1,4 +1,4 @@
-def login(client, username="user", password="password"):
+def login(client, username="Rakeshreddy", password="Rakeshreddy123"):
     return client.post("/api/login", json={"username": username, "password": password})
 
 
@@ -9,8 +9,8 @@ def test_me_requires_login(client):
 def test_login_success(client):
     response = login(client)
     assert response.status_code == 200
-    assert response.json() == {"username": "user"}
-    assert client.get("/api/me").json() == {"username": "user"}
+    assert response.json() == {"username": "Rakeshreddy"}
+    assert client.get("/api/me").json() == {"username": "Rakeshreddy"}
 
 
 def test_login_wrong_password(client):

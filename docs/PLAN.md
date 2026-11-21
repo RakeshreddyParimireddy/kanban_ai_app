@@ -7,7 +7,7 @@ Checklists are checked off by the agent as work completes. Each part ends with i
 - Single container, single port: FastAPI on `8000` serves the API at `/api/*` and the statically exported Next.js site at `/`.
 - Next.js uses `output: "export"`; the build output (`frontend/out`) is copied into the image and mounted with `StaticFiles(html=True)`.
 - Dockerfile is multi-stage: `node` stage builds the frontend, `python` stage installs backend deps with `uv` and runs `uvicorn`.
-- Auth: hardcoded `user` / `password` checked by the backend; session held in a signed cookie (Starlette `SessionMiddleware`). A `users` table exists for future multi-user support.
+- Auth: hardcoded `Rakeshreddy` / `Rakeshreddy123` checked by the backend; session held in a signed cookie (Starlette `SessionMiddleware`). A `users` table exists for future multi-user support.
 - Board storage: one row per user holding the board as JSON (same `BoardData` shape the frontend already uses). Confirmed with the user in Part 5.
 - AI: `openai` Python SDK pointed at `https://openrouter.ai/api/v1`, model `openai/gpt-oss-120b`, key from `.env` (`OPENROUTER_API_KEY`). Structured Outputs return `{ message, board | null }`; a non-null `board` replaces the stored board.
 - SQLite file at `backend/data/app.db` (volume-mounted so data survives container restarts), created with schema and seed board on startup if missing.
@@ -53,7 +53,7 @@ Success: `http://localhost:8000/` shows the Kanban board from the container and 
 
 ## Part 4: Fake user sign in
 
-- [x] Backend: `POST /api/login` (checks `user`/`password`, sets session), `POST /api/logout` (clears session), `GET /api/me` (returns username or 401)
+- [x] Backend: `POST /api/login` (checks `Rakeshreddy`/`Rakeshreddy123`, sets session), `POST /api/logout` (clears session), `GET /api/me` (returns username or 401)
 - [x] `SessionMiddleware` with a secret from env (default for local dev)
 - [x] Frontend: on load call `/api/me`; show a login form if 401, else the board; header shows a Log out button
 - [x] Login form styled with the project colors; error message on bad credentials
@@ -63,7 +63,7 @@ Tests:
 - [x] Vitest: login form renders, submits, shows error on failure; board shown when authenticated
 - [x] Playwright: `/` shows login; wrong password shows error; correct login shows board; logout returns to login; reload keeps session
 
-Success: the board is only reachable after signing in with `user`/`password`, and logout works.
+Success: the board is only reachable after signing in with `Rakeshreddy`/`Rakeshreddy123`, and logout works.
 
 ## Part 5: Database modeling
 
@@ -72,7 +72,7 @@ Success: the board is only reachable after signing in with `user`/`password`, an
 - [x] User reviews and signs off
 
 Approved schema:
-- `users(id INTEGER PK, username TEXT UNIQUE)` - seeded with `user` (no password column while credentials are hardcoded)
+- `users(id INTEGER PK, username TEXT UNIQUE)` - seeded with `Rakeshreddy` (no password column while credentials are hardcoded)
 - `boards(id INTEGER PK, user_id INTEGER UNIQUE FK -> users.id, data TEXT JSON, updated_at TEXT)` - one board per user, `data` is `BoardData`
 
 Success: user approves the schema.

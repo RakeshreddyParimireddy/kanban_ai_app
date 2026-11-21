@@ -26,12 +26,12 @@ def test_init_is_idempotent(db_path):
 
 def test_existing_data_survives_restart(db_path):
     db.init_db()
-    board = db.get_board("user")
+    board = db.get_board("Rakeshreddy")
     board.columns[0].title = "Persisted"
-    db.save_board("user", board)
+    db.save_board("Rakeshreddy", board)
     with TestClient(app):
         pass
-    assert db.get_board("user").columns[0].title == "Persisted"
+    assert db.get_board("Rakeshreddy").columns[0].title == "Persisted"
 
 
 def test_board_requires_login(client):
@@ -93,5 +93,5 @@ def test_boards_isolated_per_user(db_path):
     board = db.get_board("other")
     board.columns[0].title = "Other's backlog"
     db.save_board("other", board)
-    assert db.get_board("user").columns[0].title == "Backlog"
+    assert db.get_board("Rakeshreddy").columns[0].title == "Backlog"
     assert db.get_board("other").columns[0].title == "Other's backlog"

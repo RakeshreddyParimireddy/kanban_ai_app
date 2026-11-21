@@ -4,7 +4,7 @@ SQLite via Python's standard `sqlite3` module. Schema: [schema.json](schema.json
 
 ## Tables
 
-- `users` - one row per user. The MVP seeds a single `user`. Credentials stay hardcoded in the backend for the MVP, so there is no password column yet; one gets added (hashed) when real auth arrives.
+- `users` - one row per user. The MVP seeds a single `Rakeshreddy` user. Credentials stay hardcoded in the backend for the MVP, so there is no password column yet; one gets added (hashed) when real auth arrives.
 - `boards` - one board per user (`user_id` is `UNIQUE`). The whole board is stored as JSON in `data`, in exactly the `BoardData` shape the frontend uses:
 
 ```json
@@ -24,6 +24,6 @@ SQLite via Python's standard `sqlite3` module. Schema: [schema.json](schema.json
 ## Lifecycle
 
 - On startup the backend creates the DB file and tables if they don't exist (`CREATE TABLE IF NOT EXISTS`).
-- If the `user` row or their board is missing, it is seeded: the user, and a board with 5 columns (Backlog, Discovery, In Progress, Review, Done) and the demo cards.
+- If the `Rakeshreddy` user row or their board is missing, it is seeded: the user, and a board with 5 columns (Backlog, Discovery, In Progress, Review, Done) and the demo cards.
 - The `backend/data` directory is mounted as a volume, so data survives container restarts.
 - Board JSON is validated with Pydantic before every write.

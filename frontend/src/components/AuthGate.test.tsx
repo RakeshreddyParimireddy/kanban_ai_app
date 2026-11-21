@@ -4,7 +4,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { mockApi } from "@/test/mockApi";
 
 const signIn = async (password: string) => {
-  await userEvent.type(screen.getByLabelText(/username/i), "user");
+  await userEvent.type(screen.getByLabelText(/username/i), "Rakeshreddy");
   await userEvent.type(screen.getByLabelText(/password/i), password);
   await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 };
@@ -37,12 +37,12 @@ describe("AuthGate", () => {
     const { fetchMock } = mockApi({ signedIn: false });
     render(<AuthGate />);
     await screen.findByRole("button", { name: /sign in/i });
-    await signIn("password");
+    await signIn("Rakeshreddy123");
     expect(await screen.findAllByTestId(/column-/i)).toHaveLength(5);
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/login",
       expect.objectContaining({
-        body: JSON.stringify({ username: "user", password: "password" }),
+        body: JSON.stringify({ username: "Rakeshreddy", password: "Rakeshreddy123" }),
       })
     );
 

@@ -14,8 +14,8 @@ type Options = { signedIn?: boolean; loginOk?: boolean; board?: BoardData; chatR
 export const mockApi = ({ signedIn = true, loginOk = true, board = initialData, chatReply = null }: Options = {}) => {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
-    if (url === "/api/me") return signedIn ? json(200, { username: "user" }) : json(401, {});
-    if (url === "/api/login") return loginOk ? json(200, { username: "user" }) : json(401, {});
+    if (url === "/api/me") return signedIn ? json(200, { username: "Rakeshreddy" }) : json(401, {});
+    if (url === "/api/login") return loginOk ? json(200, { username: "Rakeshreddy" }) : json(401, {});
     if (url === "/api/logout") return json(200, { status: "ok" });
     if (url === "/api/board" && method === "GET") return json(200, board);
     if (url === "/api/board" && method === "PUT") return json(200, JSON.parse(init!.body as string));

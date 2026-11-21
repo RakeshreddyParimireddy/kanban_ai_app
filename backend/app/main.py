@@ -14,8 +14,8 @@ STATIC_DIR = Path(os.environ.get("STATIC_DIR", Path(__file__).resolve().parent.p
 SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-secret")
 
 # MVP: single hardcoded user
-USERNAME = "user"
-PASSWORD = "password"
+USERNAME = "Rakeshreddy"
+PASSWORD = "Rakeshreddy123"
 
 
 @asynccontextmanager

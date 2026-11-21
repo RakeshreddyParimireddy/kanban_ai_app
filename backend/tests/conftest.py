@@ -28,5 +28,5 @@ def client(db_path):
 
 @pytest.fixture
 def auth_client(client):
-    client.post("/api/login", json={"username": "user", "password": "password"})
+    client.post("/api/login", json={"username": "Rakeshreddy", "password": "Rakeshreddy123"})
     return client
