@@ -217,7 +217,7 @@ export const KanbanBoard = ({ onLogout, onSessionExpired }: KanbanBoardProps) =>
           <section
             inert={isChatSending}
             aria-busy={isChatSending}
-            className={clsx("grid gap-6 lg:grid-cols-5 transition", isChatSending && "opacity-60")}
+            className={clsx("grid gap-6 lg:auto-cols-fr lg:grid-flow-col transition", isChatSending && "opacity-60")}
           >
             {board.columns.map((column) => (
               <KanbanColumn

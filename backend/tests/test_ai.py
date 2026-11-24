@@ -81,14 +81,48 @@ def test_ai_service_error_returns_502(auth_client, fake_ai):
     assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
 
 
-def test_ai_removing_a_column_is_rejected(auth_client, fake_ai):
+def test_ai_deletes_column_and_moves_its_cards(auth_client, fake_ai):
     board = copy.deepcopy(db.DEFAULT_BOARD)
-    removed = board["columns"].pop()
-    for card_id in removed["cardIds"]:
-        del board["cards"][card_id]
-    fake_ai.replies.append(json.dumps({"message": "Removed Done", "board": board}))
+    columns = {c["id"]: c for c in board["columns"]}
+    columns["col-progress"]["cardIds"] += columns["col-review"]["cardIds"]
+    board["columns"] = [c for c in board["columns"] if c["id"] != "col-review"]
+    fake_ai.replies.append(json.dumps({"message": "Deleted Review", "board": board}))
 
-    assert auth_client.post("/api/chat", json={"message": "remove Done"}).status_code == 502
+    response = auth_client.post(
+        "/api/chat", json={"message": "Delete the Review column and move its cards to In Progress"}
+    )
+
+    assert response.status_code == 200
+    assert auth_client.get("/api/board").json() == board
+    assert [c["title"] for c in board["columns"]] == ["Backlog", "Discovery", "In Progress", "Done"]
+
+
+def test_ai_deleting_every_column_is_rejected(auth_client, fake_ai):
+    fake_ai.replies.append(json.dumps({"message": "Cleared", "board": {"columns": [], "cards": {}}}))
+
+    assert auth_client.post("/api/chat", json={"message": "delete all columns"}).status_code == 502
+    assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
+
+
+def test_ai_adds_column_between_review_and_done(auth_client, fake_ai):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    done = [c["id"] for c in board["columns"]].index("col-done")
+    board["columns"].insert(done, {"id": "col-testing", "title": "Testing", "cardIds": []})
+    fake_ai.replies.append(json.dumps({"message": "Added Testing", "board": board}))
+
+    response = auth_client.post("/api/chat", json={"message": "Add a column called Testing between Review and Done"})
+
+    assert response.status_code == 200
+    titles = [c["title"] for c in auth_client.get("/api/board").json()["columns"]]
+    assert titles == ["Backlog", "Discovery", "In Progress", "Review", "Testing", "Done"]
+
+
+def test_ai_reordering_columns_is_rejected(auth_client, fake_ai):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    board["columns"].reverse()
+    fake_ai.replies.append(json.dumps({"message": "Reversed", "board": board}))
+
+    assert auth_client.post("/api/chat", json={"message": "reverse the columns"}).status_code == 502
     assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
 
 

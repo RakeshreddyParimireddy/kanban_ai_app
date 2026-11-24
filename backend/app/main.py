@@ -69,9 +69,11 @@ def me(username: str = Depends(current_user)):
     return {"username": username}
 
 
-def columns_unchanged(username: str, board: BoardData) -> bool:
-    """Columns are fixed: only their titles may change."""
-    return [c.id for c in board.columns] == [c.id for c in db.get_board(username).columns]
+def columns_allowed(username: str, board: BoardData) -> bool:
+    """Columns may be added anywhere or removed, but at least one must remain and kept columns can't be reordered."""
+    new_ids = [c.id for c in board.columns]
+    kept_ids = [c.id for c in db.get_board(username).columns if c.id in new_ids]
+    return bool(new_ids) and [i for i in new_ids if i in kept_ids] == kept_ids
 
 
 @app.get("/api/board")
@@ -81,8 +83,8 @@ def read_board(username: str = Depends(current_user)) -> BoardData:
 
 @app.put("/api/board")
 def write_board(board: BoardData, username: str = Depends(current_user)) -> BoardData:
-    if not columns_unchanged(username, board):
-        raise HTTPException(status_code=422, detail="Columns are fixed; only their titles can change")
+    if not columns_allowed(username, board):
+        raise HTTPException(status_code=422, detail="Columns cannot be reordered and at least one must remain")
     db.save_board(username, board)
     return board
 
@@ -96,8 +98,8 @@ def chat(request: ChatRequest, username: str = Depends(current_user)) -> ChatRep
     except OpenAIError:
         raise HTTPException(status_code=502, detail="The AI service is unavailable")
     if reply.board is not None:
-        if not columns_unchanged(username, reply.board):
-            raise HTTPException(status_code=502, detail="The AI changed the board's columns")
+        if not columns_allowed(username, reply.board):
+            raise HTTPException(status_code=502, detail="The AI reordered the columns or removed all of them")
         db.save_board(username, reply.board)
     return reply
 

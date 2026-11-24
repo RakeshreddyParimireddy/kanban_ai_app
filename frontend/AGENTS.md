@@ -24,7 +24,7 @@ Next.js 16 (App Router) + React 19 + Tailwind CSS 4 Kanban board. Built as a sta
 BoardData = { columns: { id, title, cardIds[] }[], cards: Record<id, { id, title, details }> }
 ```
 
-Columns are fixed (5); only their titles change. Card order is the order of `cardIds`.
+Columns can be renamed, and inserted or deleted through the AI chat; they are never reordered and at least one remains. The board grid lays out any number of columns in one row on large screens. Card order is the order of `cardIds`.
 
 ## Tests
 

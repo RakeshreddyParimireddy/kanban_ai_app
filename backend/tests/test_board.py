@@ -97,23 +97,30 @@ def test_boards_isolated_per_user(db_path):
     assert db.get_board("other").columns[0].title == "Other's backlog"
 
 
-def test_put_rejects_removed_column(auth_client):
+def test_put_removes_column(auth_client):
     board = copy.deepcopy(db.DEFAULT_BOARD)
     removed = board["columns"].pop()
     for card_id in removed["cardIds"]:
         del board["cards"][card_id]
+    assert auth_client.put("/api/board", json=board).status_code == 200
+    assert auth_client.get("/api/board").json() == board
+
+
+def test_put_rejects_board_without_columns(auth_client):
+    assert auth_client.put("/api/board", json={"columns": [], "cards": {}}).status_code == 422
+
+
+def test_put_adds_column_at_position(auth_client):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    board["columns"].insert(1, {"id": "col-extra", "title": "Extra", "cardIds": []})
+    assert auth_client.put("/api/board", json=board).status_code == 200
+    assert auth_client.get("/api/board").json() == board
+
+
+def test_put_rejects_duplicate_column_ids(auth_client):
+    board = copy.deepcopy(db.DEFAULT_BOARD)
+    board["columns"].append({"id": "col-done", "title": "Done again", "cardIds": []})
     assert auth_client.put("/api/board", json=board).status_code == 422
-    assert auth_client.get("/api/board").json() == db.DEFAULT_BOARD
-
-
-def test_put_rejects_added_or_renamed_column_ids(auth_client):
-    extra = copy.deepcopy(db.DEFAULT_BOARD)
-    extra["columns"].append({"id": "col-extra", "title": "Extra", "cardIds": []})
-    assert auth_client.put("/api/board", json=extra).status_code == 422
-
-    renamed = copy.deepcopy(db.DEFAULT_BOARD)
-    renamed["columns"][0]["id"] = "col-other"
-    assert auth_client.put("/api/board", json=renamed).status_code == 422
 
 
 def test_put_rejects_reordered_columns(auth_client):

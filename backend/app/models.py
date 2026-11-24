@@ -21,6 +21,9 @@ class BoardData(BaseModel):
 
     @model_validator(mode="after")
     def check_consistency(self):
+        column_ids = [column.id for column in self.columns]
+        if len(column_ids) != len(set(column_ids)):
+            raise ValueError("Column ids must be unique")
         placed = [card_id for column in self.columns for card_id in column.cardIds]
         if len(placed) != len(set(placed)):
             raise ValueError("A card appears in more than one place")
