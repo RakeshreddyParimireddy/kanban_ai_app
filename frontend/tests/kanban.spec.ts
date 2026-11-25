@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { initialData } from "../src/test/boardFixture";
 import { dragCardToColumn, signInToBoard } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
@@ -22,6 +23,40 @@ test("adds a card to a column", async ({ page }) => {
 test("moves a card between columns", async ({ page }) => {
   await dragCardToColumn(page, "card-card-1", "column-col-review");
   await expect(page.getByTestId("column-col-review").getByTestId("card-card-1")).toBeVisible();
+});
+
+test("moves a card into an empty column", async ({ page }) => {
+  // Empty "In Progress" by removing its cards, then reload so the board shows it empty.
+  const cards = Object.fromEntries(
+    Object.entries(initialData.cards).filter(([id]) => id !== "card-4" && id !== "card-5")
+  );
+  const columns = initialData.columns.map((column) =>
+    column.id === "col-progress" ? { ...column, cardIds: [] } : column
+  );
+  await page.request.put("/api/board", { data: { columns, cards } });
+  await page.reload();
+
+  const emptyColumn = page.getByTestId("column-col-progress");
+  const dropArea = emptyColumn.getByText("Drop a card here");
+  await expect(dropArea).toBeVisible();
+
+  // Drop inside the empty area, level with the first card of the neighbouring Review column.
+  // That is where corner-distance collision detection used to pick the neighbour instead.
+  const cardBox = await page.getByTestId("card-card-1").boundingBox();
+  const dropBox = await dropArea.boundingBox();
+  const neighbourBox = await page.getByTestId("card-card-6").boundingBox();
+  if (!cardBox || !dropBox || !neighbourBox) {
+    throw new Error("Unable to resolve drag coordinates.");
+  }
+  await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(dropBox.x + dropBox.width / 2, neighbourBox.y + neighbourBox.height / 2, {
+    steps: 12,
+  });
+  await page.mouse.up();
+
+  await expect(emptyColumn.getByTestId("card-card-1")).toBeVisible();
+  await expect(page.getByTestId("column-col-review").getByTestId("card-card-1")).toHaveCount(0);
 });
 
 test("edits a card", async ({ page }) => {

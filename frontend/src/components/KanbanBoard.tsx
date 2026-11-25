@@ -8,6 +8,8 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  pointerWithin,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -21,6 +23,14 @@ import { ApiError, getBoard, saveBoard } from "@/lib/api";
 type KanbanBoardProps = {
   onLogout: () => void;
   onSessionExpired: () => void;
+};
+
+// Target whatever is under the pointer: a card (insert before it) or else its column (append).
+// closestCorners alone compares corner distances, so over a tall or empty column a card in the
+// neighbouring column often scores closer and the drop lands there instead.
+const collisionDetection: CollisionDetection = (args) => {
+  const underPointer = pointerWithin(args);
+  return underPointer.length > 0 ? underPointer : closestCorners(args);
 };
 
 const isUnauthorized = (err: unknown) => err instanceof ApiError && err.status === 401;
@@ -210,7 +220,7 @@ export const KanbanBoard = ({ onLogout, onSessionExpired }: KanbanBoardProps) =>
 
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
