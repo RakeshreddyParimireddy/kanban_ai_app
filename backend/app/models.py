@@ -46,5 +46,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatReply(BaseModel):
-    message: str
+    # board comes first: with message first, the free model sometimes wrote the board inside the
+    # message string and returned board null, so the change was silently lost.
     board: BoardData | None
+    message: str
